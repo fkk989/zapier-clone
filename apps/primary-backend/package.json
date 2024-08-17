@@ -1,0 +1,17 @@
+{
+    "name": "@repo/primary-backend",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+      "build": "tsc -b"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+      "@repo/db": "*",
+      "kafkajs": "^2.2.4"
+    }
+  }
+  

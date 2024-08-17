@@ -1,0 +1,18 @@
+{
+  "name": "@repo/outbox-processor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "dev":" ts-node dist/index.js",
+    "start": "ts-node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@repo/db": "*",
+    "kafkajs": "^2.2.4"
+  }
+}
