@@ -18,7 +18,8 @@ export const GithubLogin: React.FC<Props> = ({
 }) => {
   return (
     <button
-      onClick={() => {
+      onClick={(e) => {
+        e.preventDefault();
         signIn("github");
       }}
       className="flex justify-center items-center font-bold bg-[#2C2C30]  hover:bg-[#71717A] rounded-md gap-[10px] cursor-pointer text-white "

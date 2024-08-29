@@ -5,6 +5,7 @@ import GithubProvider, { GithubProfile } from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 
+export const runtime = "edge";
 //
 export async function checkPassword(
   password: string,
@@ -27,12 +28,12 @@ export const authOptions: NextAuthOptions = {
         const userInDb = await prisma.user.findUnique({
           where: { email: email! },
         });
-
+        //
         if (userInDb) {
           return {
             ...profile,
             id: userInDb.id,
-            name: userInDb.name,
+            name: `${userInDb.firstName} ${userInDb.lastName}`,
             avatar_url: profile.picture,
           };
         }
@@ -42,14 +43,15 @@ export const authOptions: NextAuthOptions = {
         const createdUser = await prisma.user.create({
           data: {
             email: email!,
-            name: `${given_name} ${family_name}`,
+            firstName: given_name,
+            lastName: family_name,
             authType: "google",
           },
         });
         return {
           ...profile,
           id: createdUser.id,
-          name: createdUser.name,
+          name: `${createdUser.firstName} ${createdUser.lastName}`,
         };
         //
       },
@@ -62,7 +64,6 @@ export const authOptions: NextAuthOptions = {
       // @ts-ignore
       async profile(profile: GithubProfile, token) {
         //
-
         const { name, email, login } = profile;
         // finding user in db
         const userInDb = await prisma.user.findUnique({
@@ -75,11 +76,14 @@ export const authOptions: NextAuthOptions = {
           };
         }
         // creating user when user login in for first time
-
+        const nameArray = name?.split(" ") ?? [];
+        const firstName = nameArray[0] ?? "";
+        const lastName = nameArray[nameArray.length - 1] ?? "";
         const createdUser = await prisma.user.create({
           data: {
             email: email!,
-            name: name!,
+            firstName,
+            lastName,
             authType: "github",
           },
         });
@@ -94,11 +98,9 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_SECRET as string,
     }),
     CredentialsProvider({
-      id: "signin",
-      name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
+        email: {},
+        password: {},
       },
       async authorize(credentials, req): Promise<any> {
         try {
@@ -111,16 +113,12 @@ export const authOptions: NextAuthOptions = {
             throw Error("User not found");
           }
           //
-          if (userInDb.authType !== "credentials")
-            throw Error(`User authenticated with ${userInDb.authType}`);
-          //
           const isPasswordValid = await checkPassword(
             credentials?.password!,
             userInDb.password!
           );
-
+          //
           if (!isPasswordValid) throw Error("Incorrect password");
-          console.log("isPasswordValid", isPasswordValid);
           // deleting user password and returning it to the callback
           userInDb.password = "";
           return userInDb;
@@ -132,12 +130,11 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, account, user }) {
-      console.log("account", account);
-      console.log("user", user);
-      token.userId = user?.id as number;
-      token.imageUrl = user?.avatar_url;
-      token.userAuthToken = account?.access_token;
-
+      if (user && account) {
+        token.userId = user?.id as number;
+        token.imageUrl = user?.avatar_url;
+        token.userAuthToken = account?.access_token;
+      }
       return token;
     },
     async session({ session, token }) {
@@ -147,6 +144,6 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  session: { strategy: "jwt" },
   secret: process.env.NEXT_AUTH_SECRET,
+  pages: { signIn: "/login" },
 };

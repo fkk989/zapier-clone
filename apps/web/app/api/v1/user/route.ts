@@ -6,6 +6,7 @@ import { prisma } from "@repo/db";
 export const POST = async (req: NextRequest) => {
   try {
     const reqBody = await req.json();
+    console.log(reqBody);
     //
     const parsedBody = signUpSchema.safeParse(reqBody);
     // checking if all the types are correct
@@ -26,7 +27,10 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json(
         {
           success: false,
-          message: "User already exist with this email",
+          error: {
+            type: "email",
+            message: "User already exist with this email",
+          },
         },
         { status: 409 }
       );
@@ -37,7 +41,8 @@ export const POST = async (req: NextRequest) => {
     //
     await prisma?.user.create({
       data: {
-        name: parsedBody.data.name,
+        firstName: parsedBody.data.firstName,
+        lastName: parsedBody.data.lastName,
         email: parsedBody.data.email,
         password: hashedPassword,
         authType: "credentials",
@@ -48,7 +53,7 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json(
       {
         success: true,
-        message: "Successfully signed up",
+        message: "Signed up successfully",
       },
       { status: 200 }
     );
@@ -57,7 +62,10 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json(
       {
         success: false,
-        message: e.message,
+        error: {
+          type: "unknown",
+          message: e.message,
+        },
       },
       { status: 400 }
     );

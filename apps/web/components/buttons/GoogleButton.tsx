@@ -13,7 +13,8 @@ export const GoolgeLogin: React.FC<GoogleButtonProp> = (prop) => {
   //
   return (
     <button
-      onClick={() => {
+      onClick={(e) => {
+        e.preventDefault();
         signIn("google");
       }}
       className={clsx(

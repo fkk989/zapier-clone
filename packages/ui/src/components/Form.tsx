@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { z } from "zod";
 import {
   createContext,
   CSSProperties,
@@ -12,6 +13,7 @@ import {
   UseFormRegister,
   FormState,
 } from "react-hook-form";
+import { DiVim } from "react-icons/di";
 
 export interface SchemaProp {
   type:
@@ -33,7 +35,7 @@ export interface SchemaProp {
   lable_text?: string;
   lable_style?: CSSProperties;
   lable_className?: string;
-  validation?: { isRequired: boolean; pattern: RegExp; message: string };
+  validation?: { isRequired: boolean; pattern: RegExp; message?: string };
 }
 
 interface FormContextProp {
@@ -60,7 +62,7 @@ const Root: React.FC<FormProp> = ({
   style,
   schema,
 }) => {
-  const { register, handleSubmit, formState } = useForm<any>();
+  const { register, handleSubmit, formState, setError } = useForm<any>();
   //
   return (
     <FormContext.Provider value={{ onSubmit, schema, register, formState }}>
@@ -74,6 +76,35 @@ const Root: React.FC<FormProp> = ({
     </FormContext.Provider>
   );
 };
+
+//
+// Function to generate an error message
+function generateErrorMessagePassword(value: string) {
+  const password = z
+    .string({ required_error: "password is required" })
+    .min(8, { message: "8 characters" })
+    .regex(/[a-z]/, {
+      message: "one lowercase letter",
+    })
+    .regex(/[A-Z]/, {
+      message: "one uppercase letter",
+    })
+    .regex(/\d/, { message: " one digit" })
+    .regex(/[!@#$%^&*()_+]/, {
+      message: "one special character",
+    });
+
+  const parsedPassword = password.safeParse(value);
+
+  if (!parsedPassword.success) {
+    let errorMessage = `passowrd must have`;
+    parsedPassword.error.errors.forEach(({ message }) => {
+      errorMessage = `${errorMessage}, ${message} `;
+    });
+    return errorMessage;
+  }
+  return "";
+}
 
 const Input: React.FC<SchemaProp> = ({
   props,
@@ -111,8 +142,15 @@ const Input: React.FC<SchemaProp> = ({
               maxLength: max_length,
               minLength: min_lenght,
               validate: {
-                matchPattern: (value) =>
-                  validation.pattern.test(value) || validation.message,
+                matchPattern: (value) => {
+                  if (props?.name === "password" && !validation.message) {
+                    return (
+                      validation.pattern.test(value) ||
+                      generateErrorMessagePassword(value)
+                    );
+                  }
+                  return validation.pattern.test(value) || validation.message;
+                },
               },
             })}
           />
@@ -138,7 +176,6 @@ const Input: React.FC<SchemaProp> = ({
 
 const InputGroup: React.FC<SchemaProp> = ({ group }) => {
   const {
-    register,
     formState: { errors },
   } = useContext(FormContext)!;
   return (
@@ -172,15 +209,20 @@ const Submit: React.FC<{
   className?: string;
   style?: CSSProperties;
   children: React.ReactNode;
-}> = ({ className, style, children }) => {
+  loader?: React.ReactNode;
+}> = ({ className, style, children, loader }) => {
+  const {
+    formState: { isSubmitting },
+  } = useContext(FormContext)!;
   return (
     <button
+      disabled={isSubmitting}
       type="submit"
       className={className}
       style={style}
       title="hello world"
     >
-      {children}
+      {!isSubmitting ? children : loader}
     </button>
   );
 };
